@@ -1,26 +1,10 @@
 {
-    "folders": [
-        {
-            "path": "vscode-dotnet-runtime-extension"
-        },
-        {
-            "path": "vscode-dotnet-sdk-extension"
-        },
-        {
-            "path": "sample"
-        },
-        {
-            "path": "vscode-dotnet-runtime-library"
-        }
-    ],
-    "settings": {
-        "cSpell.words": [
-            "aspnetcore",
-            "DOTNETINSTALLMODELIST",
-            "dotnets",
-            "Republisher",
-            "unlocalized",
-            "vscd"
-        ]
-    }
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "."
+		}
+	]
 }
