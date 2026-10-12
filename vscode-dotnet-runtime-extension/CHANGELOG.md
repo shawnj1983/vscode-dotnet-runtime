@@ -7,9 +7,19 @@ and this project adheres to [Semantic Versioning].
 
 ## [Unreleased]
 
+## [3.2.0] - 2026-09
 
+- **Breaking change:** In untrusted workspaces (Restricted Mode), workspace and folder values that select an existing .NET executable, bypass existing-path validation, or configure a proxy are now ignored. This applies to `dotnetAcquisitionExtension.existingDotnetPath`, `dotnetAcquisitionExtension.sharedExistingDotnetPath`, `dotnetAcquisitionExtension.allowInvalidPaths`, and `dotnetAcquisitionExtension.proxyUrl`. User-level values continue to apply, and automatic .NET acquisition remains available. Trust a workspace only after reviewing its contents; reload VS Code after granting trust to apply these settings.
 
-## [3.1.0] - 2026-5
+3.1.1 preview features are converted into full release features.
+
+## [3.1.1] - 2026-09-15
+
+- Support preview .NET versions.
+- Report cancelled SDK uninstalls accurately. Thank you, **[GaTTGeng](https://github.com/GaTTGeng)**!
+- Dependency updates.
+
+## [3.1.0] - 2026-06-11
 
 - Adds Language Model Tools for the AI chat in VS Code. These language model tools:
 1. Help the agent chat window resolve scenarios where C# or related extensions fail to load.

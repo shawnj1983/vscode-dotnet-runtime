@@ -9,6 +9,7 @@ import
     {
         AcquireErrorConfiguration,
         checkForUnsupportedLinux,
+        compareSDKPatchOrPreRelease,
         convertToLinuxPackageManagerSupportedVersion,
         DotnetAcquisitionCompleted,
         DotnetAcquisitionStarted,
@@ -39,6 +40,7 @@ import
         SuppressedAcquisitionError
     } from 'vscode-dotnet-runtime-library';
 import { settingsInfoContent } from './SettingsInfoContent';
+import { isUserCancellationMessage } from './ErrorMessageUtilities';
 
 /**
  * Tool name constants matching those in package.json
@@ -98,14 +100,6 @@ function textResult(text: string): vscode.LanguageModelToolResult
     return new vscode.LanguageModelToolResult([new vscode.LanguageModelTextPart(text)]);
 }
 
-/**
- * Heuristically detects whether an error/installer message indicates the user cancelled or declined an
- * elevation/credential prompt, so install and uninstall can surface a consistent "retry and accept prompts" hint.
- */
-function isUserCancellationMessage(message: string): boolean
-{
-    return /cancel|user rejected|user denied|password request/i.test(message);
-}
 
 /**
  * Builds the minimal IAcquisitionWorkerContext that the stateless VersionUtilities parsing helpers require.
@@ -227,7 +221,9 @@ export function highestPatchInSameFeatureBand(requestedVersion: string, installe
         return undefined;
     }
 
-    return sameBand.sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))[sameBand.length - 1];
+    // Order by feature-band patch and then pre-release identity so a stable release outranks its preview and
+    // higher-numbered previews outrank lower ones (localeCompare would mis-rank e.g. RTM below -preview).
+    return sameBand.sort((a, b) => compareSDKPatchOrPreRelease(a, b, eventStream, versionParseContext(eventStream, a)))[sameBand.length - 1];
 }
 
 /**

@@ -7,7 +7,6 @@ import * as proc from 'child_process';
 import * as fs from 'fs';
 import * as os from 'os';
 import { promisify } from 'util';
-import open = require('open');
 import path = require('path');
 
 import { exec as execElevated } from '@vscode/sudo-prompt';
@@ -430,7 +429,7 @@ ${stderr}`));
      */
     public async execute(command: CommandExecutorCommand, options: any = null, terminalFailure = true): Promise<CommandExecutorResult>
     {
-        const fullCommandString = `${command.commandRoot} ${command.commandParts.join(' ')}`;
+        const fullCommandString = `${command.commandRoot} ${command.commandParts.join(' ')}`; // CodeQL [SM03609] callers construct commands from constants and separately validated / workspace trusted values
         let useCache = false;
         // Remove this when https://github.com/typescript-eslint/typescript-eslint/issues/2728 is done
 
@@ -723,7 +722,7 @@ Please report this at https://github.com/dotnet/vscode-dotnet-runtime/issues.`),
             // No need to add to PATH again
             return undefined;
         }
-        return `echo 'export PATH="${pathAddition}:$PATH"' >> ${profileFile}`;
+        return `echo 'export PATH="${pathAddition}:$PATH"' >> ${profileFile}`; // CodeQL [SM03609] both values are locally derived installation and user-profile paths, not request-controlled command text.
     }
 
     protected getWindowsPathCommand(pathAddition: string): string | undefined
@@ -733,8 +732,8 @@ Please report this at https://github.com/dotnet/vscode-dotnet-runtime/issues.`),
             // No need to add to PATH again
             return undefined;
         }
-        return `for /F "skip=2 tokens=1,2*" %A in ('%SystemRoot%\\System32\\reg.exe query "HKCU\\Environment" /v "Path" 2^>nul') do ` +
-            `(%SystemRoot%\\System32\\reg.exe ADD "HKCU\\Environment" /v Path /t REG_SZ /f /d "${pathAddition};%C")`;
+        return `for /F "skip=2 tokens=1,2*" %A in ('%SystemRoot%\\System32\\reg.exe query "HKCU\\Environment" /v "Path" 2^>nul') do ` + // CodeQL [SM03609] the command is fixed and reads only the current user's trusted environment.
+            `(%SystemRoot%\\System32\\reg.exe ADD "HKCU\\Environment" /v Path /t REG_SZ /f /d "${pathAddition};%C")`; // CodeQL [SM03609] pathAddition is a locally discovered .NET installation directory.
     }
 
     protected runPathCommand(pathCommand: string, troubleshootingUrl: string, displayWorker: IWindowDisplayWorker)
@@ -750,7 +749,7 @@ Please report this at https://github.com/dotnet/vscode-dotnet-runtime/issues.`),
             {
                 if (response === this.pathTroubleshootingOption)
                 {
-                    open(`${troubleshootingUrl}#unable-to-add-to-path`).catch(() => {});
+                    displayWorker.openExternalUrl(`${troubleshootingUrl}#unable-to-add-to-path`).catch(() => {});
                 }
             }, this.pathTroubleshootingOption);
         }

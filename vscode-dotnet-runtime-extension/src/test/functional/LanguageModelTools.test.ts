@@ -17,6 +17,7 @@ import
     MockWindowDisplayWorker
 } from 'vscode-dotnet-runtime-library';
 import * as extension from '../../extension';
+import { buildUninstallFailureMessage } from '../../ErrorMessageUtilities';
 import { buildAvailableInstallsSearchContext, computeLinuxPatchMismatchNote, highestPatchInSameFeatureBand, isFullySpecifiedSdkVersion, resolveSdkVersionForInstall, ToolNames } from '../../LanguageModelTools';
 
 const assert: any = chai.assert;
@@ -877,6 +878,17 @@ suite('LanguageModelTools Tests', function ()
 
             assert.isTrue(hasActionableGuidance, 'Error messages should provide actionable guidance');
         }).timeout(standardTimeoutTime);
+
+        test('Reports a dismissed elevation prompt as a cancelled uninstall', () =>
+        {
+            const message = buildUninstallFailureMessage('9.0.314', 'User did not grant permission.');
+
+            assert.include(message, 'was cancelled');
+            assert.include(message, 'Retry and accept the prompt');
+            assert.include(message, 'User did not grant permission.');
+            assert.notInclude(message, 'Another install may be in progress');
+            assert.notInclude(message, 'code User did not grant permission.');
+        }).timeout(standardTimeoutTime);
     });
 
     suite('Enable/Disable Setting', function ()
@@ -1067,6 +1079,18 @@ suite('LanguageModelTools Tests', function ()
             test('Returns undefined when no install matches the band', () =>
             {
                 assert.isUndefined(highestPatchInSameFeatureBand('10.0.106', [], eventStream));
+            }).timeout(standardTimeoutTime);
+
+            test('Ranks a stable release above its preview of the same patch', () =>
+            {
+                const installed = ['11.0.100-preview.5.26352.110', '11.0.100-preview.6.26352.110', '11.0.100'];
+                assert.equal(highestPatchInSameFeatureBand('11.0.100', installed, eventStream), '11.0.100', 'The RTM outranks its previews');
+            }).timeout(standardTimeoutTime);
+
+            test('Ranks higher-numbered previews above lower ones', () =>
+            {
+                const installed = ['11.0.100-preview.5.26352.110', '11.0.100-preview.6.26352.110'];
+                assert.equal(highestPatchInSameFeatureBand('11.0.100-preview.5.26352.110', installed, eventStream), '11.0.100-preview.6.26352.110', 'preview.6 outranks preview.5');
             }).timeout(standardTimeoutTime);
         });
 

@@ -70,6 +70,8 @@ import
     InstallationValidator,
     InstallRecord,
     InvalidUninstallRequest,
+    isFullySpecifiedRuntimeVersion,
+    isFullySpecifiedVersion,
     IUtilityContext,
     JsonInstaller,
     LanguageModelToolsRegistrationError,
@@ -92,8 +94,8 @@ import
 import { InstallTrackerSingleton } from 'vscode-dotnet-runtime-library/dist/Acquisition/InstallTrackerSingleton';
 import { EventStreamTaggingDecorator } from 'vscode-dotnet-runtime-library/dist/EventStream/EventStreamTaggingDecorator';
 import { dotnetCoreAcquisitionExtensionId } from './DotnetCoreAcquisitionId';
+import { buildUninstallFailureMessage } from './ErrorMessageUtilities';
 import { registerLanguageModelTools } from './LanguageModelTools';
-import open = require('open');
 
 const packageJson = require('../package.json');
 
@@ -270,7 +272,10 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
 
             // If a fully specified version (e.g., 8.0.19) is requested and forceUpdate is undefined,
             // set forceUpdate to true to skip the existing installation check and install the specific version requested.
-            if (commandContext.version.split('.').length > 2 && commandContext.forceUpdate === undefined)
+            const isVersionFullySpecified = mode === 'sdk' ?
+                isFullySpecifiedVersion(commandContext.version, globalEventStream, workerContext) :
+                isFullySpecifiedRuntimeVersion(commandContext.version);
+            if (isVersionFullySpecified && commandContext.forceUpdate === undefined)
             {
                 commandContext.forceUpdate = true;
             }
@@ -289,7 +294,7 @@ export function activate(vsCodeContext: vscode.ExtensionContext, extensionContex
 
             // Note: This will impact the context object given to the worker and error handler since objects own a copy of a reference in JS.
             const runtimeVersionResolver = new VersionResolver(workerContext);
-            commandContext.version = commandContext.version.split('.')?.length > 2 ? commandContext.version : await runtimeVersionResolver.getFullVersion(commandContext.version, mode);
+            commandContext.version = isVersionFullySpecified ? commandContext.version : await runtimeVersionResolver.getFullVersion(commandContext.version, mode);
 
             const acquisitionInvoker = new AcquisitionInvoker(workerContext, utilContext);
             return mode === 'aspnetcore' ? worker.acquireLocalASPNET(workerContext, acquisitionInvoker) : worker.acquireLocalRuntime(workerContext, acquisitionInvoker);
@@ -863,7 +868,7 @@ ${JSON.stringify(commandContext)}`));
                 // rethrown consistently when rethrowError is requested (e.g. for the LLM tools).
                 if (result !== '0' && result !== '')
                 {
-                    throw new Error(`Uninstall of .NET ${commandContext.version} did not succeed (code ${result}). The uninstaller may have been cancelled, blocked by another install in progress, or require manual removal.`);
+                    throw new Error(buildUninstallFailureMessage(commandContext.version, result));
                 }
             }
         }, getIssueContext(existingPathConfigWorker)(commandContext?.errorConfiguration, 'uninstall'), commandContext?.requestingExtensionId, workerContext, commandContext?.rethrowError);
@@ -925,7 +930,7 @@ ${JSON.stringify(commandContext)}`));
     {
         const [url, issueBody] = formatIssueUrl(undefined, getIssueContext(existingPathConfigWorker)(AcquireErrorConfiguration.DisableErrorPopups, 'reportIssue'));
         await vscode.env.clipboard.writeText(issueBody);
-        open(url).catch(() => {});
+        vscode.env.openExternal(vscode.Uri.parse(url)).then(undefined, () => {});
     });
 
     // Helper Functions

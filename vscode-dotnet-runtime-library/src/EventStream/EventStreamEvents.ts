@@ -4,7 +4,7 @@
 *--------------------------------------------------------------------------------------------*/
 import * as fs from 'fs';
 import * as path from 'path';
-import { DotnetInstall, InstallToStrings } from '../Acquisition/DotnetInstall';
+import type { DotnetInstall } from '../Acquisition/DotnetInstall';
 import { DotnetInstallMode } from '../Acquisition/DotnetInstallMode';
 import { IDotnetInstallationContext } from '../Acquisition/IDotnetInstallationContext';
 import { DotnetInstallType } from '../IDotnetAcquireContext';
@@ -12,6 +12,17 @@ import { IDotnetFindPathContext } from '../IDotnetFindPathContext';
 import { EventType } from './EventType';
 import { IEvent } from './IEvent';
 import { TelemetryUtilities } from './TelemetryUtilities';
+
+function InstallToStrings(install: DotnetInstall)
+{
+    return {
+        installId: install.installId,
+        version: install.version,
+        architecture: install.architecture ?? 'unspecified',
+        isGlobal: install.isGlobal.toString(),
+        installMode: install.installMode.toString()
+    };
+}
 
 export class EventCancellationError extends Error
 {
@@ -647,7 +658,10 @@ export class DotnetInstallCancelledByUserError extends DotnetInstallExpectedAbor
     public readonly eventName = 'DotnetInstallCancelledByUserError';
 }
 
-
+export class DotnetUninstallCancelledByUserError extends DotnetInstallExpectedAbort
+{
+    public readonly eventName = 'DotnetUninstallCancelledByUserError';
+}
 
 export class DotnetNonZeroInstallerExitCodeError extends DotnetAcquisitionError
 {
